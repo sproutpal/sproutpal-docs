@@ -1,7 +1,9 @@
 # 0001. Store the knowledge base in MongoDB
 
 - **Status:** Accepted
-- **Date:** 2026-11-13
+- **Date:** 2026-11-13, updated 2026-11-17
+
+> **Scope note (2026-11-17):** SproutPal is currently being validated with a **demo**: a website with course topics and a few encyclopedia entries, shown to a potential partner garden center. The demo uses only the core of this decision: MongoDB on the VPS (points 1–5 and 8), with content loaded manually. Versioning, the listener service, backups and monitoring (points 6, 7 and 9) apply when SproutPal goes into production.
 
 ## Context
 
@@ -25,9 +27,11 @@ The application reads the knowledge base from a database. The first version is r
 5. When an entry is renamed, the `name` in every reference to it is updated as well.
 6. There is **no editing interface** in the first version. Content is written into the database with AI assistance, through a small **write script**. An editing interface may be added later.
 7. **Every change creates a new version, and every previous version is kept in full.**
-   - Each document carries a version number and a `changeNote` describing the change. A MongoDB schema validation rule (`$jsonSchema`) makes `changeNote` mandatory.
+   - Each document carries a version number and a `changeNote` describing the change. A MongoDB schema validation rule (`$jsonSchema`) makes `changeNote` mandatory, and the write path checks that a new version number comes with a new `changeNote`.
    - Previous versions are stored by **events, not by the writer**: a small listener service subscribes to MongoDB **change streams** with pre-images enabled (`changeStreamPreAndPostImages`) and copies the full previous version of every changed or deleted document into a `history` collection.
    - Because history is filled from database events, it is created no matter where the write comes from: the write script, a future editing interface or a manual fix.
+   - If the listener sees a change without a new `changeNote`, it only **reports** it; the change stays live.
+   - The listener runs in a **Docker container** with automatic restart. Its logs and metrics go to the existing **Grafana Cloud** setup (Loki, Prometheus), which raises alerts — including when the listener stops sending a heartbeat — and provides a dashboard.
 8. For the first version, MongoDB is **self-hosted on a rented VPS** (Contabo), as a single-node replica set, together with the listener service.
 9. **Backup:** the knowledge base content — course topics, encyclopedia entries and their `history` — is backed up to a **private GitHub repository** as plain JSON, one file per document, so changes are readable in git as well.
    - The **listener service** does it, driven by the same change stream events: changed documents are written to the backup repository and pushed. Pushes are batched (for example after a short quiet period) instead of one push per change.
@@ -63,4 +67,6 @@ The application reads the knowledge base from a database. The first version is r
 - How a restore from the backup repository works.
 - Securing MongoDB on the VPS (authentication, no public database port).
 - The exact format of course topic content (structured blocks or marked-up text).
-- How the listener is run and monitored, and how the oplog window is sized.
+- How the oplog window is sized.
+- How content written with AI assistance reaches the database in production (a write API on the VPS, file import, or manual upload).
+- Where images are stored (an external object storage, provider to be chosen) and how they are backed up.
