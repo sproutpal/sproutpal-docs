@@ -16,7 +16,7 @@ Each entry type has its **own MongoDB collection**. Entries are not embedded in 
 | Species | `species` | Apple, Pear, Cherry | **Draft below** |
 | Variety | `varieties` | 'Jonagold', 'Bosc kobak' | **Draft below** |
 | Rootstock | `rootstocks` | M9, MM106, Quince A | **Draft below** |
-| Pest / disease | `diseases` | Apple scab, Codling moth | To be defined |
+| Pest / disease | `diseases` | Apple scab, Codling moth | **Draft below** |
 
 ## Common conventions
 
@@ -24,7 +24,7 @@ These apply to every entry type.
 
 ### Identifiers
 
-- Every entry has a stable identifier of the form `<type>:<slug>`, for example `species:apple`, `rootstock:m9`, `disease:apple-scab`.
+- Every entry has a stable identifier of the form `<type>:<slug>`, for example `species:apple`, `rootstock:m9`, `disease:apple-scab`, `pest:codling-moth`. Course topics use `topic:<slug>`.
 - **Varieties include their species** in the slug, because varieties of different species can share a name: `variety:<species>-<variety>`, for example `variety:apple-jonagold`, `variety:pear-bosc-kobak`.
 - The slug is lowercase ASCII, words separated by `-`, without Hungarian accents.
 - The identifier is stored as the MongoDB **`_id`** of the document. MongoDB keeps `_id` unique and indexed, so no separate `id` field is needed.
@@ -79,7 +79,7 @@ What depends on something else is stored there, and **every variety has its own 
 - **Variety:** frost hardiness, crown forms, vigor, self-fertility, harvest time.
 - **Rootstock:** tree size and planting distance (to be defined in the rootstock section).
 
-Lists from other entries (for example the harvest seasons of a species' varieties, or the rootstocks used for it) are produced by queries, not stored on the species. The rootstock stores which species it is used for.
+Lists from other entries (for example the harvest seasons of a species' varieties, the rootstocks used for it, or the pests and diseases affecting it) are produced by queries, not stored on the species. The rootstock and the pest or disease store which species they belong to.
 
 ### Fields
 
@@ -92,7 +92,6 @@ Lists from other entries (for example the harvest seasons of a species' varietie
 | `water` | enum | no | Water need: `low` / `medium` / `high`. |
 | `lifespan` | string | no | Typical productive lifespan, for example `20–30 years`. |
 | `plantingSeasons` | enum[] | no | When to plant: `autumn` / `spring`. |
-| `commonDiseases` | reference[] | no | Pests and diseases that commonly affect the species. |
 | `description` | localized text | no | Short plain-text description. |
 
 ### Soil
@@ -115,7 +114,6 @@ Lists from other entries (for example the harvest seasons of a species' varietie
   "soil": { "types": ["loam"], "ph": { "min": 6.0, "max": 7.0 }, "drainage": "high" },
   "water": "medium",
   "plantingSeasons": ["autumn", "spring"],
-  "commonDiseases": [{ "id": "disease:apple-scab", "name": { "hu": "Varasodás", "en": "Apple scab" } }],
   "version": 1,
   "changeNote": "First version",
   "updatedAt": "2026-11-18T00:00:00Z"
@@ -313,6 +311,55 @@ Rootstocks can also be used across species (for example quince for pears), so th
 
 > The example values are placeholders for illustrating the structure, not verified data.
 
+## Pest and disease (`disease`)
+
+> **Draft for discussion.** Field list to be confirmed.
+
+Pests and diseases share one collection, because they are looked up and linked the same way. The `category` field tells them apart, and the identifier prefix follows it: `pest:codling-moth`, `disease:apple-scab`.
+
+The longer text fields are fixed for every entry and contain plain text (ADR-0002). Relationships are reference fields.
+
+### Fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `category` | enum | yes | `pest` / `fungal` / `bacterial` / `viral` / `physiological`. |
+| `scientificName` | string | no | Latin name of the pathogen or pest, for example `Venturia inaequalis`. Not translated. |
+| `affectedSpecies` | reference[] | yes | Species it affects. |
+| `activePeriod` | period[] | no | When it is active or when symptoms appear, same period format as for ripening. |
+| `severity` | enum | no | Typical damage: `low` / `medium` / `high`. |
+| `symptoms` | localized text | yes | How to recognize it. |
+| `cause` | localized text | no | What causes it and how it spreads or develops. |
+| `prevention` | localized text | yes | How to prevent it. |
+| `treatment` | localized text | no | What to do if it appears. |
+| `organicOptions` | boolean | no | Whether organic methods are available. |
+| `description` | localized text | no | Short plain-text summary. |
+
+Which varieties and rootstocks are resistant or susceptible is not stored here: it is in their `diseaseResistance` field, and the disease page lists them by query.
+
+### Example
+
+```json
+{
+  "_id": "disease:apple-scab",
+  "name": { "hu": "Varasodás", "en": "Apple scab" },
+  "category": "fungal",
+  "scientificName": "Venturia inaequalis",
+  "affectedSpecies": [{ "id": "species:apple", "name": { "hu": "Alma", "en": "Apple" } }],
+  "activePeriod": [{ "from": "04-early", "to": "07-late" }],
+  "severity": "high",
+  "symptoms": { "hu": "…" },
+  "prevention": { "hu": "…" },
+  "organicOptions": true,
+  "relatedTopics": [{ "id": "topic:plant-protection-basics", "name": { "hu": "A növényvédelem alapjai" } }],
+  "version": 1,
+  "changeNote": "First version",
+  "updatedAt": "2026-11-18T00:00:00Z"
+}
+```
+
+> The example values are placeholders for illustrating the structure, not verified data.
+
 ## Lists and indexes
 
 Lists in the other direction are produced by queries, not stored (ADR-0001). For example, the varieties of a species:
@@ -331,6 +378,8 @@ Fields that are queried often get an index, so these queries stay fast:
 | `varieties` | `rootstocks.id` | Varieties suitable for a rootstock |
 | `varieties` | `diseaseResistance.disease.id` | Varieties affected by or resistant to a disease |
 | `rootstocks` | `species.id` | Rootstocks used for a species |
+| `rootstocks` | `diseaseResistance.disease.id` | Rootstocks resistant to or affected by a disease |
+| `diseases` | `affectedSpecies.id` | Pests and diseases affecting a species |
 
 ## Open questions
 
