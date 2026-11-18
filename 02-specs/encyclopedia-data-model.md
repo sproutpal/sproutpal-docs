@@ -13,9 +13,9 @@ Each entry type has its **own MongoDB collection**. Entries are not embedded in 
 
 | Type | Collection | Example | Status |
 | --- | --- | --- | --- |
-| Species | `species` | Apple, Pear, Cherry | To be defined |
+| Species | `species` | Apple, Pear, Cherry | **Draft below** |
 | Variety | `varieties` | 'Jonagold', 'Bosc kobak' | **Draft below** |
-| Rootstock | `rootstocks` | M9, MM106, Quince A | To be defined |
+| Rootstock | `rootstocks` | M9, MM106, Quince A | To be defined (includes tree size and planting distance) |
 | Pest / disease | `diseases` | Apple scab, Codling moth | To be defined |
 
 ## Common conventions
@@ -68,6 +68,64 @@ A reference to another entry or a course topic is an object:
 | `changeNote` | string | yes | What changed in this version. |
 | `updatedAt` | date | yes | Time of the last change. |
 
+## Species (`species`)
+
+> **Draft for discussion.** Field list to be confirmed.
+
+A species holds only what is truly common to all its varieties: general requirements such as light, soil and water, and when to plant.
+
+What depends on something else is stored there, and **every variety has its own values filled in** (no defaults inherited from the species):
+
+- **Variety:** frost hardiness, crown forms, vigor, self-fertility, harvest time.
+- **Rootstock:** tree size and planting distance (to be defined in the rootstock section).
+
+Lists across varieties (for example the harvest seasons of a species) are produced by queries, not stored on the species.
+
+### Fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `scientificName` | string | yes | Latin name, for example `Malus domestica`. Not translated. |
+| `family` | string | no | Plant family, for example `Rosaceae`. |
+| `light` | enum | yes | `full-sun` / `partial-shade` / `shade`. |
+| `soil` | object | no | Soil requirements, see below. |
+| `water` | enum | no | Water need: `low` / `medium` / `high`. |
+| `lifespan` | string | no | Typical productive lifespan, for example `20–30 years`. |
+| `plantingSeasons` | enum[] | no | When to plant: `autumn` / `spring`. |
+| `rootstocks` | reference[] | no | Rootstocks used for the species. |
+| `commonDiseases` | reference[] | no | Pests and diseases that commonly affect the species. |
+| `description` | localized text | no | Short plain-text description. |
+
+### Soil
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `types` | enum[] | Suitable soil types: `sandy` / `loam` / `clay` / `chalky`. |
+| `ph` | object | Suitable pH range, `{ "min": 6.0, "max": 7.0 }`. |
+| `drainage` | enum | Need for drainage: `low` / `medium` / `high`. |
+
+### Example
+
+```json
+{
+  "_id": "species:apple",
+  "name": { "hu": "Alma", "en": "Apple" },
+  "scientificName": "Malus domestica",
+  "family": "Rosaceae",
+  "light": "full-sun",
+  "soil": { "types": ["loam"], "ph": { "min": 6.0, "max": 7.0 }, "drainage": "high" },
+  "water": "medium",
+  "plantingSeasons": ["autumn", "spring"],
+  "rootstocks": [{ "id": "rootstock:m9", "name": { "hu": "M9", "en": "M9" } }],
+  "commonDiseases": [{ "id": "disease:apple-scab", "name": { "hu": "Varasodás", "en": "Apple scab" } }],
+  "version": 1,
+  "changeNote": "First version",
+  "updatedAt": "2026-11-18T00:00:00Z"
+}
+```
+
+> The example values are placeholders for illustrating the structure, not verified data.
+
 ## Variety (`variety`)
 
 > **Draft for discussion.** Field list to be confirmed.
@@ -84,10 +142,10 @@ A reference to another entry or a course topic is an object:
 | `taste` | object | no | Structured taste profile, see below. |
 | `storage` | localized text | no | How long and how the fruit keeps. |
 | `tree` | object | no | Vigor, growth habit and bearing, see below. |
-| `frostHardiness` | enum | no | `low` / `medium` / `high`. |
+| `frostHardiness` | enum | yes | `low` / `medium` / `high`. |
 | `pollination` | object | yes | Self-fertility and pollinators, see below. |
 | `rootstocks` | reference[] | no | Suitable rootstocks. |
-| `crownForms` | enum[] | no | Suitable crown forms, see below. |
+| `crownForms` | enum[] | yes | Suitable crown forms, see below. |
 | `diseaseResistance` | object[] | no | Resistance per disease, see below. |
 | `description` | localized text | no | Short plain-text description. |
 
@@ -167,6 +225,7 @@ Each item:
   },
   "rootstocks": [{ "id": "rootstock:m9", "name": { "en": "M9", "hu": "M9" } }],
   "crownForms": ["spindle"],
+  "frostHardiness": "medium",
   "diseaseResistance": [
     { "disease": { "id": "disease:apple-scab", "name": { "en": "Apple scab", "hu": "Varasodás" } }, "level": "susceptible" }
   ],
