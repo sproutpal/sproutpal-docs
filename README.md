@@ -18,11 +18,16 @@ The goal is simple: fewer failed plantings, and a garden that gets better every 
 
 ## About this repository
 
-`sproutpal-docs` is the home of the SproutPal product documentation:
+`sproutpal-docs` is the home of the SproutPal product documentation. It is organized in reading order:
 
-- product concept and specifications
-- architecture decisions
-- **Features** — every user-facing feature is tracked as an issue here, since a feature may span several component repositories
+| Folder | Contents |
+| --- | --- |
+| [`01-product/`](01-product/) | Product concept and vision: what SproutPal is and who it is for |
+| [`02-specs/`](02-specs/) | Functional specifications, one per module (plot editor, sun map, planner, …) |
+| [`03-architecture/`](03-architecture/) | Architecture overview; [`decisions/`](03-architecture/decisions/) holds the architecture decision records (ADRs) |
+| [`04-process/`](04-process/) | How we work: workflow, issue types, branches and commits, versioning |
+
+**Features** are tracked as issues in this repository, since a feature may span several component repositories.
 
 Implementation lives in separate component repositories under the [sproutpal](https://github.com/sproutpal) organization.
 
