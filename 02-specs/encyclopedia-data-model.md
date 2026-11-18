@@ -15,7 +15,7 @@ Each entry type has its **own MongoDB collection**. Entries are not embedded in 
 | --- | --- | --- | --- |
 | Species | `species` | Apple, Pear, Cherry | **Draft below** |
 | Variety | `varieties` | 'Jonagold', 'Bosc kobak' | **Draft below** |
-| Rootstock | `rootstocks` | M9, MM106, Quince A | To be defined (includes tree size and planting distance) |
+| Rootstock | `rootstocks` | M9, MM106, Quince A | **Draft below** |
 | Pest / disease | `diseases` | Apple scab, Codling moth | To be defined |
 
 ## Common conventions
@@ -79,7 +79,7 @@ What depends on something else is stored there, and **every variety has its own 
 - **Variety:** frost hardiness, crown forms, vigor, self-fertility, harvest time.
 - **Rootstock:** tree size and planting distance (to be defined in the rootstock section).
 
-Lists across varieties (for example the harvest seasons of a species) are produced by queries, not stored on the species.
+Lists from other entries (for example the harvest seasons of a species' varieties, or the rootstocks used for it) are produced by queries, not stored on the species. The rootstock stores which species it is used for.
 
 ### Fields
 
@@ -92,7 +92,6 @@ Lists across varieties (for example the harvest seasons of a species) are produc
 | `water` | enum | no | Water need: `low` / `medium` / `high`. |
 | `lifespan` | string | no | Typical productive lifespan, for example `20–30 years`. |
 | `plantingSeasons` | enum[] | no | When to plant: `autumn` / `spring`. |
-| `rootstocks` | reference[] | no | Rootstocks used for the species. |
 | `commonDiseases` | reference[] | no | Pests and diseases that commonly affect the species. |
 | `description` | localized text | no | Short plain-text description. |
 
@@ -116,7 +115,6 @@ Lists across varieties (for example the harvest seasons of a species) are produc
   "soil": { "types": ["loam"], "ph": { "min": 6.0, "max": 7.0 }, "drainage": "high" },
   "water": "medium",
   "plantingSeasons": ["autumn", "spring"],
-  "rootstocks": [{ "id": "rootstock:m9", "name": { "hu": "M9", "en": "M9" } }],
   "commonDiseases": [{ "id": "disease:apple-scab", "name": { "hu": "Varasodás", "en": "Apple scab" } }],
   "version": 1,
   "changeNote": "First version",
@@ -237,6 +235,84 @@ Each item:
 
 > The example values are placeholders for illustrating the structure, not verified data.
 
+## Rootstock (`rootstock`)
+
+> **Draft for discussion.** Field list to be confirmed.
+
+The rootstock is the root system a variety is grafted onto. It largely decides how big the tree grows, how far apart trees are planted, how soon they bear fruit and which soils they tolerate.
+
+Rootstocks can also be used across species (for example quince for pears), so the identifier does not include a species: `rootstock:m9`, `rootstock:quince-a`.
+
+### Fields
+
+| Field | Type | Required | Description |
+| --- | --- | --- | --- |
+| `species` | reference[] | yes | Species the rootstock is used for, for example apple; quince rootstocks for pear. |
+| `origin` | localized text | no | Where it was developed, for example East Malling, England. |
+| `vigor` | enum | yes | `very-weak` / `weak` / `medium` / `strong` / `very-strong`. |
+| `treeSize` | object | yes | Typical mature tree size on this rootstock, see below. |
+| `spacing` | object | yes | Planting distance, see below. |
+| `bearingStart` | enum | no | How soon trees start bearing: `early` / `medium` / `late`. |
+| `support` | enum | yes | Need for a stake or trellis: `none` / `recommended` / `permanent`. |
+| `soilTolerance` | object | no | Which soil conditions it tolerates, see below. |
+| `frostHardiness` | enum | no | Frost hardiness of the roots: `low` / `medium` / `high`. |
+| `lifespan` | string | no | Typical productive lifespan of trees on it, for example `15–20 years`. |
+| `suckering` | enum | no | Tendency to produce root suckers: `low` / `medium` / `high`. |
+| `crownForms` | enum[] | no | Crown forms it suits (same values as for varieties). |
+| `diseaseResistance` | object[] | no | Same structure as for varieties: `{ disease, level }`. |
+| `incompatibleVarieties` | reference[] | no | Varieties that cannot be grafted directly onto it (for example some pears on quince, which need an interstem). |
+| `description` | localized text | no | Short plain-text description. |
+
+### Tree size
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `height` | range | Height in meters, `{ "min": 2, "max": 3 }`. |
+| `width` | range | Crown width in meters, same format. |
+| `percentOfSeedling` | range | Size compared to a tree on a seedling rootstock, in percent, for example `{ "min": 25, "max": 35 }`. |
+
+### Spacing
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `inRow` | range | Distance between trees in a row, in meters. |
+| `betweenRows` | range | Distance between rows, in meters. |
+
+### Soil tolerance
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `types` | enum[] | Soil types it tolerates: `sandy` / `loam` / `clay` / `chalky`. |
+| `drought` | enum | Drought tolerance: `low` / `medium` / `high`. |
+| `wetness` | enum | Tolerance of wet, poorly drained soil: `low` / `medium` / `high`. |
+
+### Example
+
+```json
+{
+  "_id": "rootstock:m9",
+  "name": { "hu": "M9", "en": "M9" },
+  "species": [{ "id": "species:apple", "name": { "hu": "Alma", "en": "Apple" } }],
+  "origin": { "hu": "East Malling, Anglia", "en": "East Malling, England" },
+  "vigor": "weak",
+  "treeSize": {
+    "height": { "min": 2, "max": 3 },
+    "width": { "min": 1.5, "max": 2.5 },
+    "percentOfSeedling": { "min": 25, "max": 35 }
+  },
+  "spacing": { "inRow": { "min": 0.8, "max": 1.5 }, "betweenRows": { "min": 3, "max": 4 } },
+  "bearingStart": "early",
+  "support": "permanent",
+  "soilTolerance": { "types": ["loam"], "drought": "low", "wetness": "low" },
+  "crownForms": ["spindle"],
+  "version": 1,
+  "changeNote": "First version",
+  "updatedAt": "2026-11-18T00:00:00Z"
+}
+```
+
+> The example values are placeholders for illustrating the structure, not verified data.
+
 ## Lists and indexes
 
 Lists in the other direction are produced by queries, not stored (ADR-0001). For example, the varieties of a species:
@@ -254,6 +330,7 @@ Fields that are queried often get an index, so these queries stay fast:
 | `varieties` | `pollination.pollinators.id` | Varieties a given variety pollinates |
 | `varieties` | `rootstocks.id` | Varieties suitable for a rootstock |
 | `varieties` | `diseaseResistance.disease.id` | Varieties affected by or resistant to a disease |
+| `rootstocks` | `species.id` | Rootstocks used for a species |
 
 ## Open questions
 
