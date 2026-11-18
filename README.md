@@ -26,6 +26,7 @@ The goal is simple: fewer failed plantings, and a garden that gets better every 
 | [`02-specs/`](02-specs/) | Functional specifications, one per module (plot editor, sun map, planner, …) |
 | [`03-architecture/`](03-architecture/) | Architecture overview; [`decisions/`](03-architecture/decisions/) holds the architecture decision records (ADRs) |
 | [`04-process/`](04-process/) | How we work: workflow, issue types, branches and commits, versioning |
+| [`05-design/`](05-design/) | Design foundations: principles, colours, typography, spacing, design tokens |
 
 **Features** are tracked as issues in this repository, since a feature may span several component repositories.
 
