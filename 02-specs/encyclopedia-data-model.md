@@ -78,7 +78,8 @@ A reference to another entry or a course topic is an object:
 | --- | --- | --- | --- |
 | `species` | reference | yes | The species, for example `species:apple`. Must match the species part of the identifier. |
 | `origin` | localized text | no | Where and by whom it was bred, and when. |
-| `ripening` | object | yes | Ripening time, see below. |
+| `ripening` | object | yes | Picking and eating ripeness, see below. |
+| `usage` | enum[] | no | `fresh` / `cooking` / `juice` / `drying`. |
 | `fruit` | object | no | Size, shape and color of the fruit. |
 | `taste` | object | no | Structured taste profile, see below. |
 | `storage` | localized text | no | How long and how the fruit keeps. |
@@ -86,16 +87,21 @@ A reference to another entry or a course topic is an object:
 | `frostHardiness` | enum | no | `low` / `medium` / `high`. |
 | `pollination` | object | yes | Self-fertility and pollinators, see below. |
 | `rootstocks` | reference[] | no | Suitable rootstocks. |
+| `crownForms` | enum[] | no | Suitable crown forms, see below. |
 | `diseaseResistance` | object[] | no | Resistance per disease, see below. |
 | `description` | localized text | no | Short plain-text description. |
 
 ### Ripening
 
+For apples and pears, picking ripeness and eating ripeness differ: a winter apple is picked in October but is best to eat in December or January.
+
 | Field | Type | Description |
 | --- | --- | --- |
 | `season` | enum | `summer` / `autumn` / `winter`. |
-| `from` | string | Start of harvest, as month and part of month, for example `09-mid`. |
-| `to` | string | End of harvest, same format. |
+| `picking` | period | When the fruit is picked. |
+| `eating` | period | When the fruit is best to eat. Omitted if it is the same as `picking`. |
+
+A **period** is `{ "from": ..., "to": ... }`, each value a month and a part of the month, for example `09-mid` (`early` / `mid` / `late`).
 
 ### Taste
 
@@ -116,7 +122,13 @@ A reference to another entry or a course topic is an object:
 | `yield` | enum | `low` / `medium` / `high`. |
 | `alternateBearing` | boolean | Whether it tends to bear heavily only every second year. |
 
+### Crown forms
+
+`crownForms` lists the crown forms the variety suits, as enum values, for example `spindle` (orsó), `open-center` (katlan), `central-leader` (sudaras), `palmette`. The crown forms themselves are explained in the course; the variety page links to the course topic through `relatedTopics`.
+
 ### Pollination
+
+Flowering time is not stored; pollination is described by the list of good pollinator varieties instead.
 
 | Field | Type | Description |
 | --- | --- | --- |
@@ -141,7 +153,12 @@ Each item:
   "_id": "variety:apple-jonagold",
   "name": { "en": "Jonagold", "hu": "Jonagold" },
   "species": { "id": "species:apple", "name": { "en": "Apple", "hu": "Alma" } },
-  "ripening": { "season": "autumn", "from": "09-late", "to": "10-early" },
+  "ripening": {
+    "season": "autumn",
+    "picking": { "from": "09-late", "to": "10-early" },
+    "eating": { "from": "10-mid", "to": "01-late" }
+  },
+  "usage": ["fresh", "cooking"],
   "taste": { "sweetness": "high", "acidity": "medium", "aroma": ["spicy"], "texture": ["juicy", "crisp"] },
   "pollination": {
     "selfFertile": "no",
@@ -149,6 +166,7 @@ Each item:
     "pollinators": [{ "id": "variety:apple-idared", "name": { "en": "Idared", "hu": "Idared" } }]
   },
   "rootstocks": [{ "id": "rootstock:m9", "name": { "en": "M9", "hu": "M9" } }],
+  "crownForms": ["spindle"],
   "diseaseResistance": [
     { "disease": { "id": "disease:apple-scab", "name": { "en": "Apple scab", "hu": "Varasodás" } }, "level": "susceptible" }
   ],
@@ -180,6 +198,7 @@ Fields that are queried often get an index, so these queries stay fast:
 
 ## Open questions
 
+- The final list of crown form values, aligned with the crown form course topic.
 - Does each species need its own variety fields (for example S-allele groups for cherries), or is the common list enough?
 - Should the fixed lists (aroma, texture, habit) be defined in this spec or in a separate vocabulary document?
 - Should the `changeNote` also be a localized text, since it is shown to users?
